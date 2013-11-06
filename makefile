@@ -1,9 +1,9 @@
 # Set compiler commands
 #------------------------------------
-CPP = mpic++ #gc++
+CPP = mpic++ #g++
 FLAGS = -O3
 #------------------------------------
-proj_files = main.cpp
+proj_files = serial.cpp
 #q3_files = common.f90 Q3.f90
 
 all: Main_exe
