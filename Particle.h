@@ -1,3 +1,5 @@
+#include <iostream>
+
 class Particle{
 	private:
 		double x, y;
@@ -12,4 +14,4 @@ class Particle{
 		void setY(double y_new) { y = y_new; }
 		
 };
-ostream& operator<<(ostream& outgo , const Particle& outpart);
+std::ostream& operator<<(std::ostream& outgo , const Particle& outpart);

@@ -3,10 +3,11 @@
 // Due date: 12/09/13
 
 #include <iostream>
-#include <stdlib.h>
-#include <time.h>
+#include "stdlib.h"
+#include "time.h"
 #include <cmath>
-#include "Particle.cpp"
+#include "Particle.h"
+
 using namespace std;
 
 // Class for particles to store x and y position of each
@@ -22,8 +23,8 @@ int main ()
 	
 	// Initializing particles
 	int num_part(1);
-//	cout<<"\n\nNumber of Particles:\t";
-//	cin>>num_part;
+	cout<<"\n\nNumber of Particles:\t";
+	cin>>num_part;
 	Particle* particleList = new Particle[num_part];
 	/* Made the center of the chamber to be a (0,0) and then allowed for particles to exist in any part of the rationals*/
 	for( int i=0 ; i<num_part ; i++){
@@ -36,17 +37,18 @@ int main ()
 	int iter=0;
 	for( int j=0 ; j!=1 ; ){
 		iter++;
-	for( int i=0 ; i<num_part ; i++ ){
+		for( int i=0 ; i<num_part ; i++ ){
 		//	cout<<"Particle "<<i<<"'s position is "<<particleList[i]<<".\n";
 			particleList[i].moveParticle(inChamber(1.0*chamber_width), inChamber(1.0*chamber_height));
-			if(abs(particleList[i].getX())<8 && abs(particleList[i].getY())<8){
+			if(abs(particleList[i].getX())<1 && abs(particleList[i].getY())<1){
 				j=1;
+				cout<<"Iter #" << "\t" << "X postion" << "\t" << "Y position" << endl;
 				cout<<iter<<"\t"<<particleList[i].getX()<<"\t"<<particleList[i].getY()<<endl;
-
-		}
+			}
 		}
 	}
 
+	// end main
 	return 0;
 }
 
