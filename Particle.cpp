@@ -12,24 +12,24 @@ Particle Particle::moveParticle(double moveX , double moveY){
 //	std::cout << "X is " << x << " ";
 //	std::cout << moveX << "\t "; 
 	// Check for X wall collisions
-	if(abs(x+moveX) > chamber_width/2.0) {
+	if(abs(x+moveX) > CHAMBER_WIDTH/2.0) {
 //		std::cout << "WALL COLLISION x\n";
 		if(x>0) {
-			setX(chamber_width-moveX-x);
+			setX(CHAMBER_WIDTH-moveX-x);
 		} else {
-			setX(-chamber_width-moveX-x);
+			setX(-CHAMBER_WIDTH-moveX-x);
 		}
 	} else {	
 		setX(x + moveX);
 	}	
 
 	// Check for Y wall collisions
-	if(abs(y+moveY) > chamber_height/2.0) {
+	if(abs(y+moveY) > CHAMBER_HEIGHT/2.0) {
 //		std::cout << "WALL COLLISION y\n";
 		if(y>0) {
-			setY(chamber_height-moveY-y);
+			setY(CHAMBER_HEIGHT-moveY-y);
 		} else {
-			setY(-chamber_height-moveY-y);
+			setY(-CHAMBER_HEIGHT-moveY-y);
 		}	
 	} else {
 		setY(y + moveY);

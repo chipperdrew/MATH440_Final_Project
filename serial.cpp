@@ -1,6 +1,10 @@
 // Parallel Final Project
 // Authors: Andrew Cook, Lucas Quintero
 // Due date: 12/09/13
+// TODO: (Optional) Add forces on the chamber
+// TODO: (Optional) 3D problem
+// TODO: (Optional) Output the data to file so particle movement can be plotted
+
 
 #include <iostream>
 #include "time.h"
@@ -16,7 +20,7 @@ double moveDist();
 
 int main ()
 {
-	// Declaration of vars (assume 2D problem to start)
+	// Random seed (assume 2D problem to start)
 	srand(time(NULL));
 	
 	// Initializing particles
@@ -26,33 +30,31 @@ int main ()
 	Particle* particleList = new Particle[num_part];
 	/* Made the center of the chamber to be a (0,0) and then allowed for particles to exist in any part of the rationals*/
 	for( int i=0 ; i<num_part ; i++){
-		particleList[i].setX(inChamber(chamber_width));
-		particleList[i].setY(inChamber(chamber_height));
+		particleList[i].setX(inChamber(CHAMBER_WIDTH));
+		particleList[i].setY(inChamber(CHAMBER_HEIGHT));
 	}
 
 	// Output 
 	// Outputs the iteration when the first one escapes and its location to ensure that it did escape
 	int iter=0;
-	int j=0;
+	bool escape = false;
 	do {
 		iter++;
 		for( int i=0 ; i<num_part ; i++ ){
 			//cout<<"Particle "<<i<<"'s position is "<<particleList[i]<<".\n";
 			particleList[i].moveParticle(moveDist(), moveDist());
-			if(abs(particleList[i].getX()) > 400 || abs(particleList[i].getY()) > 400) {
-				break;
-			}			
+			// TODO: Particle collisions
 
+			// Check if the particle has escaped
 			if(abs(particleList[i].getX())<1 && abs(particleList[i].getY())<1){
-				j=1; // Break loop
+				escape = true; // Break loop
 				cout<<"Iter #" << "\t" << "X postion" << "\t" << "Y position" << endl;
 				cout<<iter<<"\t"<<particleList[i].getX()<<"\t"<<particleList[i].getY()<<endl;
 			}
 		}
-	} while(j != 1);
+	} while(!escape);
 
-	// end main
-	return 0;
+	return 0; //end main
 }
 
 // Given a chamber width/height, it returns a random value between -given/2 and given/2

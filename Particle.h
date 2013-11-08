@@ -2,8 +2,8 @@
 #include <stdlib.h>
 
 // Global vars
-static const double chamber_height = 800;
-static const double chamber_width = 800;
+static const double CHAMBER_HEIGHT = 800;
+static const double CHAMBER_WIDTH = 800;
 
 class Particle{
 	private:
