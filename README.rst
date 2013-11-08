@@ -10,7 +10,7 @@ To create the executable, simply run
 from inside this directory
 
 To run the execute file for the assignment with:
-    4 cores --- $ mpiexec -machinefile machine_file -np 4 ./Main_exe
-    xx cores -- $ mpiexec -machinefile machine_file -np xx ./Main_exe
+    4 cores --- $ mpiexec -machinefile machine_file -np 4 ./main_exe
+    xx cores -- $ mpiexec -machinefile machine_file -np xx ./main_exe
 
 Have fun :)
