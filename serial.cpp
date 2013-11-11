@@ -5,7 +5,6 @@
 // TODO: (Optional) 3D problem
 // TODO: (Optional) Output the data to file so particle movement can be plotted
 
-
 #include <iostream>
 #include "time.h"
 #include <cmath>
@@ -70,11 +69,12 @@ double moveDist(){
 }
 
 void collision(Particle *particleList, int numlist){
-	double xval,m1,m2, t, x1,x2,y1,y2;
-
+	double xval,yterm,xterm,yconst,xconst,plust,negt;
+	double m1,m2,t;
+	double x1,x2,y1,y2;
 	for(int i=0 ; i<numlist ; i++){
 		m1=(particleList[i].getnewY()-particleList[i].getoldY())/(particleList[i].getnewX()-particleList[i].getoldX());
-		for(int j=i ; j<numlist ; j++){
+		for(int j=i+1 ; j<numlist-1 ; j++){
 			//xval is the value of x for the intersection of two lines
 			//this is found by (y2-y1)=m(x2-x1) for two sets of two points,
 			//solving for m of each system then setting y equal for the
@@ -82,23 +82,45 @@ void collision(Particle *particleList, int numlist){
 			m2=(particleList[j].getnewY()-particleList[j].getoldY())/(particleList[j].getnewX()-particleList[j].getoldX());
 			xval=(particleList[j].getoldY()-particleList[j].getoldX()*m1)-(particleList[i].getoldY()-particleList[i].getoldX()*m2);
 			xval=xval/(m1-m2);
-
-	  	
 	  	if((0<(particleList[i].getoldX()-xval) && 0>(particleList[i].getnewX()-xval))||
 	  			(0>(particleList[i].getoldX()-xval) && 0<(particleList[i].getnewX()-xval))){
 	  		if((0<(particleList[j].getoldX()-xval) && 0>(particleList[j].getnewX()-xval))||
 	  			(0>(particleList[j].getoldX()-xval) && 0<(particleList[j].getnewX()-xval))){
 					//Thus a collision is possible, so lets find where each particle was at time t
-					t=(xval-particleList[j].getoldX())/(particleList[j].getnewX()-particleList[j].getoldX());
-					x1=t*(particleList[i].getoldX()+particleList[i].getnewX());
-					y1=m1*t+particleList[i].getoldX();
-			  	x2=t*(particleList[j].getoldX()+particleList[j].getnewX());
-					y2=m2*t+particleList[j].getoldX();
-					if((2*particleList[i].getR()>fabs(x1-x2)) &&(2*particleList[i].getR()>fabs(y1-y2)))
-				  	cout<<"COLLISION\t"<<particleList[i].getnewX()<<"\n";
+					//Thus there should exist 2 points where the two points are separated by the two radius
+					//so we look where (y2-y1)^2+(x2-x1)^2=(2R)^2
+					//after some analysis, we get (yterm*t+yconst)^2-(xterm*t+xconst)^2=(radius1+radius2)^2
+
+//WAKA WAKA LUCAS CHECK THE DAMN CODE, YOU MAY HAVE DRANK 2 TOO MANY
+//WHAT TO DO: FIND THE PROJECTION OF ONE PATH ON TO THE OTHER, THEN FIND THE INVERSE TANGENT, THEN BISECT, THEN REFLECT BY INTERIOR ANGLES, AND CONTINUE
+//ALSO, CONSIDER FINDING THE CLOSEST INTERSECTION (VALLUE WHERE X-XVAL EXISTS AND IS SMALL), THEN RETURNING THE J VALUE, THEN DOING THE MOVEMENT,
+//THEN DOING THE MOVEMENT AND THEN SETTNIG A BOOL SO THAT THE PARTICLE HAS TO CHECK THAT THERE ARE NO OTHER COLLISIONS, ONCE THERE ARE NUM_PARTS-1-J
+// "NO" COLLSIONS THEN GO TO THE NEXT PARTICLE (NOTE:P1 CHECKS 2->NUM-1, P2 CHECKS 3->NUM-1...)
+					yterm=(particleList[j].getnewY()-particleList[j].getoldY())-(particleList[i].getnewY()-particleList[i].getoldY());
+					yconst=(particleList[j].getoldX()/(particleList[j].getnewX()-particleList[j].getoldX()))-(particleList[i].getoldX()/(particleList[i].getnewX()-particleList[i].getoldX()))+particleList[j].getoldY()-particleList[i].getoldY();
+					xterm=(particleList[j].getnewX()-particleList[j].getoldX())-(particleList[i].getnewX()-particleList[i].getoldX());
+					xconst=(particleList[j].getoldX()-particleList[i].getoldX());
+					plust=-(2*(yconst*yterm+xterm*xconst))+sqrt(pow(2*(yconst*yterm+xterm*xconst),2)-4*(pow(yterm,2)+pow(xterm,2))*(pow(yconst,2)*pow(xconst,2)));
+					negt=-(2*(yconst*yterm+xterm*xconst))-sqrt(pow(2*(yconst*yterm+xterm*xconst),2)-4*(pow(yterm,2)+pow(xterm,2))*(pow(yconst,2)*pow(xconst,2)));
+					//We want t to be postive (as t is a time, so its trivially why)
+					//We want the shortest t of the two t's as that is the initial collsion
+					if(negt<0 && plust>0){
+						t=plust;
+					} else if(plust<0 && negt<0){
+						t=negt;
+					} else if(plust>0 && negt>0){
+						if(plust<negt){
+							t=plust;
+						}
+						else{
+							t=negt;
+						}
+						cout<<t<<endl;
+					//x1=t*x()
+					}
+
 	  		}
 	  	}
-	  	
 		}
 	}
 }
