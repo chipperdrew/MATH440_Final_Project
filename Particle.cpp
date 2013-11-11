@@ -2,41 +2,44 @@
 
 
 // 2-param constructor which takes x and y positions
-Particle::Particle(double x_pos, double y_pos){
-	x=x_pos;
-	y=y_pos;
+Particle::Particle( double x_new=0, double y_new=0, double x_old=0, double y_old=0, double rad=1){
+	setnewX(x_new);
+	setnewY(y_new);
+	setoldX(x_old);
+	setoldY(y_old);
+	setR(rad);
 }
 
 // Moves the particles according to given X and Y inputs
 Particle Particle::moveParticle(double moveX , double moveY){
-//	std::cout << "X is " << x << " ";
-//	std::cout << moveX << "\t "; 
 	// Check for X wall collisions
-	if(abs(x+moveX) > CHAMBER_WIDTH/2.0) {
+	setoldX(tox);
+	setoldY(tox);
+	if(fabs(fromx+moveX) > CHAMBER_WIDTH/2.0) {
 //		std::cout << "WALL COLLISION x\n";
-		if(x>0) {
-			setX(CHAMBER_WIDTH-moveX-x);
+		if(fromx>0) {
+			setnewX(CHAMBER_WIDTH-moveX-fromx);
 		} else {
-			setX(-CHAMBER_WIDTH-moveX-x);
+			setnewX(-CHAMBER_WIDTH-moveX-fromx);
 		}
 	} else {	
-		setX(x + moveX);
+		setnewX(fromx + moveX);
 	}	
 
 	// Check for Y wall collisions
-	if(abs(y+moveY) > CHAMBER_HEIGHT/2.0) {
+	if(fabs(fromy+moveY) > CHAMBER_HEIGHT/2.0) {
 //		std::cout << "WALL COLLISION y\n";
-		if(y>0) {
-			setY(CHAMBER_HEIGHT-moveY-y);
+		if(fromy>0) {
+			setnewY(CHAMBER_HEIGHT-moveY-fromy);
 		} else {
-			setY(-CHAMBER_HEIGHT-moveY-y);
+			setnewY(-CHAMBER_HEIGHT-moveY-fromy);
 		}	
 	} else {
-		setY(y + moveY);
+		setnewY(fromy + moveY);
 	}
 }
 
 // Output a particle as an ordered pair of its location
 std::ostream& operator<<(std::ostream& outgo , const Particle& outpart){
-	outgo << "(" << outpart.getX() << " , " << outpart.getY() << ")";
+	outgo << "(" << outpart.getnewX() << " , " << outpart.getnewY() << ")";
 }

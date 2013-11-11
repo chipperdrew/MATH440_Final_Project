@@ -17,6 +17,7 @@ using namespace std;
 // Function Prototypes
 double inChamber(double);
 double moveDist();
+void collision(Particle*,int);
 
 int main ()
 {
@@ -24,14 +25,14 @@ int main ()
 	srand(time(NULL));
 	
 	// Initializing particles
-	int num_part(1);
+	int num_part(6400);
 	cout<<"\n\nNumber of Particles:\t";
-	cin>>num_part;
+	//cin>>num_part;
 	Particle* particleList = new Particle[num_part];
 	/* Made the center of the chamber to be a (0,0) and then allowed for particles to exist in any part of the rationals*/
 	for( int i=0 ; i<num_part ; i++){
-		particleList[i].setX(inChamber(CHAMBER_WIDTH));
-		particleList[i].setY(inChamber(CHAMBER_HEIGHT));
+		particleList[i].setnewX(inChamber(CHAMBER_WIDTH));
+		particleList[i].setnewY(inChamber(CHAMBER_HEIGHT));
 	}
 
 	// Output 
@@ -43,15 +44,16 @@ int main ()
 		for( int i=0 ; i<num_part ; i++ ){
 			//cout<<"Particle "<<i<<"'s position is "<<particleList[i]<<".\n";
 			particleList[i].moveParticle(moveDist(), moveDist());
-			// TODO: Particle collisions
+			// TODO: Partcile collisions
 
 			// Check if the particle has escaped
-			if(abs(particleList[i].getX())<1 && abs(particleList[i].getY())<1){
+			if(abs(particleList[i].getnewX())<escapeWidth/2.0 && abs(particleList[i].getnewY())<escapeHeight/2.0){
 				escape = true; // Break loop
 				cout<<"Iter #" << "\t" << "X postion" << "\t" << "Y position" << endl;
-				cout<<iter<<"\t"<<particleList[i].getX()<<"\t"<<particleList[i].getY()<<endl;
+				cout<<iter<<"\t"<<particleList[i].getnewX()<<"\t"<<particleList[i].getnewY()<<endl;
 			}
 		}
+		collision(particleList,num_part);
 	} while(!escape);
 
 	return 0; //end main
@@ -65,4 +67,38 @@ double inChamber(double val){
 // Returns a random number between -1 and 1 for particle movement
 double moveDist(){
 	return pow(-1.0,rand() % 2) * (5.0*rand()/RAND_MAX);
+}
+
+void collision(Particle *particleList, int numlist){
+	double xval,m1,m2, t, x1,x2,y1,y2;
+
+	for(int i=0 ; i<numlist ; i++){
+		m1=(particleList[i].getnewY()-particleList[i].getoldY())/(particleList[i].getnewX()-particleList[i].getoldX());
+		for(int j=i ; j<numlist ; j++){
+			//xval is the value of x for the intersection of two lines
+			//this is found by (y2-y1)=m(x2-x1) for two sets of two points,
+			//solving for m of each system then setting y equal for the
+			//respective y=(y2-y1)/(x2-x1)*(x2-x1)+y1
+			m2=(particleList[j].getnewY()-particleList[j].getoldY())/(particleList[j].getnewX()-particleList[j].getoldX());
+			xval=(particleList[j].getoldY()-particleList[j].getoldX()*m1)-(particleList[i].getoldY()-particleList[i].getoldX()*m2);
+			xval=xval/(m1-m2);
+
+	  	
+	  	if((0<(particleList[i].getoldX()-xval) && 0>(particleList[i].getnewX()-xval))||
+	  			(0>(particleList[i].getoldX()-xval) && 0<(particleList[i].getnewX()-xval))){
+	  		if((0<(particleList[j].getoldX()-xval) && 0>(particleList[j].getnewX()-xval))||
+	  			(0>(particleList[j].getoldX()-xval) && 0<(particleList[j].getnewX()-xval))){
+					//Thus a collision is possible, so lets find where each particle was at time t
+					t=(xval-particleList[j].getoldX())/(particleList[j].getnewX()-particleList[j].getoldX());
+					x1=t*(particleList[i].getoldX()+particleList[i].getnewX());
+					y1=m1*t+particleList[i].getoldX();
+			  	x2=t*(particleList[j].getoldX()+particleList[j].getnewX());
+					y2=m2*t+particleList[j].getoldX();
+					if((2*particleList[i].getR()>fabs(x1-x2)) &&(2*particleList[i].getR()>fabs(y1-y2)))
+				  	cout<<"COLLISION\t"<<particleList[i].getnewX()<<"\n";
+	  		}
+	  	}
+	  	
+		}
+	}
 }
