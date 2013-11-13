@@ -8,8 +8,8 @@
 #include <iostream>
 #include "time.h"
 #include <cmath>
-#include "math.h"
 #include "Particle.h"
+#include <fstream>
 
 using namespace std;
 
@@ -22,9 +22,14 @@ int main ()
 {
 	// Random seed (assume 2D problem to start)
 	srand(time(NULL));
+	int count = 0;
+
+	// Initializing file
+	ofstream output_file;
+	output_file.open("particle_locs.txt");
 	
 	// Initializing particles
-	int num_part(6400);
+	int num_part(10);
 	cout<<"\n\nNumber of Particles:\t";
 	//cin>>num_part;
 	Particle* particleList = new Particle[num_part];
@@ -43,24 +48,33 @@ int main ()
 		for( int i=0 ; i<num_part ; i++ ){
 			//cout<<"Particle "<<i<<"'s position is "<<particleList[i]<<".\n";
 			particleList[i].moveParticle(moveDist(), moveDist());
+			if(i<101) {
+				output_file << particleList[i].getnewX() << " " << 
+				particleList[i].getnewY() << " ";
+			}
+
 			// TODO: Partcile collisions
+			//collision(particleList,num_part);
 
 			// Check if the particle has escaped
 			if(abs(particleList[i].getnewX())<escapeWidth/2.0 && abs(particleList[i].getnewY())<escapeHeight/2.0){
 				escape = true; // Break loop
 				cout<<"Iter #" << "\t" << "X postion" << "\t" << "Y position" << endl;
 				cout<<iter<<"\t"<<particleList[i].getnewX()<<"\t"<<particleList[i].getnewY()<<endl;
+				break;
 			}
 		}
-		collision(particleList,num_part);
+		output_file << "\n";
 	} while(!escape);
 
+	output_file.close();
 	return 0; //end main
 }
 
 // Given a chamber width/height, it returns a random value between -given/2 and given/2
 double inChamber(double val){
-	return ( (1.0*rand()/RAND_MAX) * val ) - (val*1.0/2.0);
+	double test = ( (1.0*rand()/RAND_MAX) * val ) - (val*1.0/2.0);
+	return test;
 }
 
 // Returns a random number between -1 and 1 for particle movement

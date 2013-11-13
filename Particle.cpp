@@ -2,7 +2,7 @@
 
 
 // 2-param constructor which takes x and y positions
-Particle::Particle( double x_new=0, double y_new=0, double x_old=0, double y_old=0, double rad=1){
+Particle::Particle( double x_new, double y_new, double x_old, double y_old, double rad){
 	setnewX(x_new);
 	setnewY(y_new);
 	setoldX(x_old);
@@ -14,7 +14,7 @@ Particle::Particle( double x_new=0, double y_new=0, double x_old=0, double y_old
 Particle Particle::moveParticle(double moveX , double moveY){
 	// Check for X wall collisions
 	setoldX(tox);
-	setoldY(tox);
+	setoldY(toy);
 	if(fabs(fromx+moveX) > CHAMBER_WIDTH/2.0) {
 //		std::cout << "WALL COLLISION x\n";
 		if(fromx>0) {

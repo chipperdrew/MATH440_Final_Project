@@ -1,5 +1,6 @@
 #include <iostream>
 #include <stdlib.h>
+#include <math.h>
 
 // Global vars
 static const double CHAMBER_HEIGHT = 800;
@@ -14,7 +15,7 @@ class Particle{
 		double tox, toy;
 		double radius;
 	public: 
-		Particle( double x_new=0, double y_new=0, double x_old=0, double y_old=0, double rad=1);
+		Particle(double x_new=0, double y_new=0, double x_old=0, double y_old=0, double rad=1);
 		Particle moveParticle(double moveX, double moveY);
 		// Getters & Setters 
 		double getoldX() const { return fromx; }

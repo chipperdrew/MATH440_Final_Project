@@ -14,4 +14,4 @@ main_exe: $(proj_files)
 #	$(FC90) $(FLAGS) $(q3_files) -o $@
 
 clean:	
-	@rm main_exe
+	@rm main_exe particle_locs.txt
