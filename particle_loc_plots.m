@@ -3,13 +3,12 @@
 %%%% EDIT THESE ACCORDING TO C++ CODES
 num_parts = 10;             % In serial.cpp
 escape_wall_width = 5;      % In Particle.h
+height = 800;
+width = 800;
 
 % Open the files and read the data
 fid = fopen('particle_locs.txt');
 [partLocs, countPart] = fscanf(fid, '%g', [num_parts*2 inf]);
-
-height = 800;
-width = 800;
 
 figure;
 for i=1:num_parts
