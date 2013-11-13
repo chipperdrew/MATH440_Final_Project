@@ -3,7 +3,6 @@
 // Due date: 12/09/13
 // TODO: (Optional) Add forces on the chamber
 // TODO: (Optional) 3D problem
-// TODO: (Optional) Output the data to file so particle movement can be plotted
 
 #include <iostream>
 #include "time.h"
@@ -30,7 +29,7 @@ int main ()
 	
 	// Initializing particles
 	int num_part(10);
-	cout<<"\n\nNumber of Particles:\t";
+	cout<<"\n\nNumber of Particles:\t" << endl;
 	//cin>>num_part;
 	Particle* particleList = new Particle[num_part];
 	/* Made the center of the chamber to be a (0,0) and then allowed for particles to exist in any part of the rationals*/
@@ -57,9 +56,10 @@ int main ()
 			//collision(particleList,num_part);
 
 			// Check if the particle has escaped
-			if(abs(particleList[i].getnewX())<escapeWidth/2.0 && abs(particleList[i].getnewY())<escapeHeight/2.0){
+//			if(abs(particleList[i].getnewX())<escapeWidth/2.0 && abs(particleList[i].getnewY())<escapeHeight/2.0){
+			if(abs(particleList[i].getnewX()) > CHAMBER_WIDTH/2) {
 				escape = true; // Break loop
-				cout<<"Iter #" << "\t" << "X postion" << "\t" << "Y position" << endl;
+				cout<<"Iter #" << "\t" << "X loc" << "\t" << "Y loc" << endl;
 				cout<<iter<<"\t"<<particleList[i].getnewX()<<"\t"<<particleList[i].getnewY()<<endl;
 				break;
 			}
