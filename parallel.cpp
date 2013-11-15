@@ -1,14 +1,13 @@
 // Parallel Final Project
 // Authors: Andrew Cook, Lucas Quintero
 // Due date: 12/09/13
-// TODO: (Optional) Add forces on the chamber
-// TODO: (Optional) 3D problem
 
 #include <iostream>
 #include "time.h"
 #include <cmath>
 #include "Particle.h"
 #include <fstream>
+#include "mpi.h"
 
 using namespace std;
 
@@ -19,24 +18,26 @@ void collision(Particle*,int);
 
 int main ()
 {
+	MPI::Init();
+	int my_rank, num_cores;
+	my_rank = MPI::COMM_WORLD.Get_rank();
+	num_cores = MPI::COMM_WORLD.Get_size();
+
 	// Random seed (assume 2D problem to start)
 	srand(time(NULL));
-	int count = 0;
 
-	// Initializing file
-	ofstream output_file;
-	output_file.open("particle_locs.txt");
-	
 	// Initializing particles
 	int num_part(10);
-	//cout<<"\n\nNumber of Particles:\t" << endl;
-	//cin>>num_part;
-	cout<<"\n\nThere are " << num_part << " particles in this simulation.\n";
-	cout<<"The total area is " << CHAMBER_WIDTH << " by " << CHAMBER_HEIGHT << "\n";
-	cout<<"The escape window is of length " << 2*HALF_ESCAPE_WALL_WIDTH << "\n\n";
-
+	if(my_rank == 0) {
+		//cout<<"\n\nNumber of Particles:\t" << endl;
+		//cin>>num_part;
+		cout<<"\n\nThere are " << num_part << " particles in this simulation.\n";
+		cout<<"The total area is " << CHAMBER_WIDTH << " by " << CHAMBER_HEIGHT << "\n";
+		cout<<"The escape window is of length " << 2*HALF_ESCAPE_WALL_WIDTH << "\n\n";
+	}
 	Particle* particleList = new Particle[num_part];
 	/* Made the center of the chamber to be a (0,0) and then allowed for particles to exist in any part of the rationals*/
+	// Main core sets location of all initial particles
 	for( int i=0 ; i<num_part ; i++){
 		particleList[i].setnewX(inChamber(CHAMBER_WIDTH));
 		particleList[i].setnewY(inChamber(CHAMBER_HEIGHT));
@@ -51,11 +52,7 @@ int main ()
 		for( int i=0 ; i<num_part ; i++ ){
 			//cout<<"Particle "<<i<<"'s position is "<<particleList[i]<<".\n";
 			particleList[i].moveParticle(moveDist(), moveDist());
-			if(i<101) {
-				output_file << particleList[i].getnewX() << " " << 
-				particleList[i].getnewY() << " ";
-			}
-
+			
 			// TODO: Partcile collisions
 			//collision(particleList,num_part);
 
@@ -68,10 +65,9 @@ int main ()
 				break;
 			}
 		}
-		output_file << "\n";
 	} while(!escape);
 
-	output_file.close();
+	MPI::Finalize();
 	return 0; //end main
 }
 

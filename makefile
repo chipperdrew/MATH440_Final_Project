@@ -1,17 +1,16 @@
 # Set compiler commands
 #------------------------------------
-CPP = g++
+CPP = mpiCC #g++
 FLAGS = -O3
 #------------------------------------
-proj_files = serial.cpp
+proj_files = parallel.cpp
 #q3_files = common.f90 Q3.f90
 
 all: main_exe
 
 main_exe: $(proj_files)
-	$(CPP) $(FLAGS) *.cpp -o $@
-#Q3_exe: $(q3_files)
-#	$(FC90) $(FLAGS) $(q3_files) -o $@
+#	$(CPP) $(FLAGS) parallel.cpp Particle.cpp -o $@
+	$(CPP) $(FLAGS) serial.cpp Particle.cpp -o $@
 
 clean:	
 	@rm main_exe particle_locs.txt
