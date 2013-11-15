@@ -1,10 +1,10 @@
 % A file for plotting the Brownian Motion of 2D particles
 
 %%%% EDIT THESE ACCORDING TO C++ CODES
-num_parts = 10;             % In serial.cpp
-escape_wall_width = 5;      % In Particle.h
-height = 800;
-width = 800;
+num_parts = 10;                     % In serial.cpp
+half_escape_wall_width = 0.5;       % In Particle.h
+height = 800;                       % In Particle.h
+width = 800;                        % In Particle.h
 
 % Open the files and read the data
 fid = fopen('particle_locs.txt');
@@ -34,9 +34,9 @@ figure;
 plot(partLocs(escapee_index,:), partLocs(escapee_index+1,:));
 hold on;
 x=[width/2, width/2];
-y=[-height/2, -escape_wall_width];
+y=[-height/2, -half_escape_wall_width];
 plot(x, y, 'r')
 hold on;
-y=[escape_wall_width, height/2];
+y=[half_escape_wall_width, height/2];
 plot(x, y, 'r')
-axis([width/2-50, width/2+50, -escape_wall_width-20, escape_wall_width+20]);
+axis([width/2-50, width/2+50, -half_escape_wall_width-20, half_escape_wall_width+20]);

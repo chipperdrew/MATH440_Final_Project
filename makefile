@@ -3,13 +3,11 @@
 CPP = mpiCC #g++
 FLAGS = -O3
 #------------------------------------
-proj_files = parallel.cpp
-#q3_files = common.f90 Q3.f90
-
 all: main_exe
 
-main_exe: $(proj_files)
+#main_exe: $(parallel.cpp)
 #	$(CPP) $(FLAGS) parallel.cpp Particle.cpp -o $@
+main_exe: $(serial.cpp)
 	$(CPP) $(FLAGS) serial.cpp Particle.cpp -o $@
 
 clean:	

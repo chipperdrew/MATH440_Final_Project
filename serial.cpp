@@ -22,7 +22,11 @@ int main ()
 	// Random seed (assume 2D problem to start)
 	srand(time(NULL));
 	int count = 0;
+	double startTime, endTime;
+	startTime = clock();
 
+
+	// TODO: Remove this when comparing serial vs. parallel CPU times
 	// Initializing file
 	ofstream output_file;
 	output_file.open("particle_locs.txt");
@@ -72,6 +76,8 @@ int main ()
 	} while(!escape);
 
 	output_file.close();
+	endTime = clock();
+	cout << "Total CPU time was: " << (endTime-startTime)/CLOCKS_PER_SEC << " seconds.\n";
 	return 0; //end main
 }
 

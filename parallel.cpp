@@ -20,9 +20,13 @@ int main ()
 {
 	MPI::Init();
 	int my_rank, num_cores;
+	double startTime, endTime;
+	if(my_rank == 0) {
+		startTime = clock();
+	}
 	my_rank = MPI::COMM_WORLD.Get_rank();
 	num_cores = MPI::COMM_WORLD.Get_size();
-
+	
 	// Random seed (assume 2D problem to start)
 	srand(time(NULL));
 
@@ -67,6 +71,11 @@ int main ()
 		}
 	} while(!escape);
 
+	MPI::COMM_WORLD.Barrier();
+	if(my_rank == 0) {
+		endTime = clock();
+		cout << "Total CPU time was: " << (endTime-startTime)/CLOCKS_PER_SEC << " seconds.\n";
+	}
 	MPI::Finalize();
 	return 0; //end main
 }
