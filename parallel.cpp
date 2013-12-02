@@ -55,9 +55,9 @@ int main ()
 	// Particles cannot be sent/received, so their x & y locs are sent/received
 	for(int i=0; i<num_part; i++) {
 		if(my_rank == 0) {
-			int pos_0_to_max = particleList[i].getnewY() + CHAMBER_WIDTH/2;
+			int pos_0_to_max = particleList[i].getnewX() + CHAMBER_WIDTH/2;
 			recv_core = pos_0_to_max * (num_cores/CHAMBER_WIDTH);
-			cout << "Y Pos:" << pos_0_to_max << " Core:" << recv_core << endl;
+			cout << "X Pos:" << pos_0_to_max << " Core:" << recv_core << endl;
 			temp_locs[0] = particleList[i].getnewX();
 			temp_locs[1] = particleList[i].getnewY();
 			MPI::COMM_WORLD.Send(&temp_locs, 2, MPI::DOUBLE, recv_core, 10);
@@ -80,22 +80,23 @@ int main ()
 			core_part_list.front() << endl;
 	}
 
-
 	// Loop runs until a particle has escaped
 	// Outputs the iteration when the 1st one escapes & its location to ensure escape
 	int iter=0;
 	bool escape = false;
+	vector<int> indices_to_send;
 	do {
 		iter++;
 		for( int i=0 ; i< core_part_list.size() ; i++ ){
 			//cout<<"Particle "<<i<<"'s position is "<<particleList[i]<<".\n";
 			core_part_list.at(i).moveParticle(moveDist(), moveDist());
+			int tempX = core_part_list.at(i).getnewX();
 			
 			//collision(particleList,num_part);
 
 			// Check if the particle has escaped
 			// TODO: For now, assume escape only possible thru last core
-			if(abs(core_part_list.at(i).getnewX()) > CHAMBER_WIDTH/2 && 
+			if(abs(tempX) > CHAMBER_WIDTH/2 && 
 			   my_rank==num_cores-1) {
 				escape = true; // Break loop
 				cout<<"Iter #" << "\t" << "X loc" << "\t" << "Y loc" << endl;
@@ -103,11 +104,25 @@ int main ()
 						"\t"<< core_part_list.at(i).getnewY() << endl;
 				break;
 			}
+
+			// Check for particles moving outside of core boundaries	
+			// IF: Particle moves past left core boundary	
+			if(tempX < CHAMBER_WIDTH*(double(my_rank)/num_cores - 0.5)) {
+				recv_core = (tempX + CHAMBER_WIDTH/2) * (num_cores/CHAMBER_WIDTH);
+				//cout << "LEFT ESCAPE: Core " << my_rank << " has part with new loc: " << 
+				//core_part_list.at(i) << " & should go to core " << recv_core << endl;
+			// ELSE IF: Particle moves past right core boundary:
+			} else if(tempX > CHAMBER_WIDTH*(double(my_rank+1)/num_cores - 0.5)) {
+				recv_core = (tempX + CHAMBER_WIDTH/2) * (num_cores/CHAMBER_WIDTH);
+				//cout << "RIGHT ESCAPE: Core " << my_rank << " has part with new loc: " << 
+				//core_part_list.at(i) << " & should go to core " << recv_core << endl;
+			// ELSE: Particle still in core's domain
+			} else {
+				continue;
+			}
 		}
 		MPI::COMM_WORLD.Bcast(&escape, 1, MPI::BOOL, num_cores-1);
 		MPI::COMM_WORLD.Barrier();
-
-		// TODO: Check for particles crossing over core boundaries
 	} while(!escape);
 
 
@@ -121,6 +136,8 @@ int main ()
 	return 0; //end main
 }
 
+
+//************FUNCTIONS***************
 // Given a chamber width/height, it returns a random value between -given/2 and given/2
 double inChamber(double val){
 	double test = ( (1.0*rand()/RAND_MAX) * val ) - (val*1.0/2.0);
