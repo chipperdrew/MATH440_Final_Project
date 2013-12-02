@@ -8,6 +8,7 @@
 #include "Particle.h"
 #include <fstream>
 #include "mpi.h"
+#include <vector>
 
 using namespace std;
 
@@ -18,6 +19,7 @@ void collision(Particle*,int);
 
 int main ()
 {
+	// Initialize MPI and vars
 	MPI::Init();
 	int my_rank, num_cores;
 	double startTime, endTime;
@@ -27,26 +29,60 @@ int main ()
 	my_rank = MPI::COMM_WORLD.Get_rank();
 	num_cores = MPI::COMM_WORLD.Get_size();
 	
-	// Random seed (assume 2D problem to start)
 	srand(time(NULL));
-
-	// Initializing particles
 	int num_part(10);
+	Particle* particleList = new Particle[num_part];	
+
+	// Main core outputs basic info & initializes particle locations
 	if(my_rank == 0) {
 		//cout<<"\n\nNumber of Particles:\t" << endl;
 		//cin>>num_part;
 		cout<<"\n\nThere are " << num_part << " particles in this simulation.\n";
 		cout<<"The total area is " << CHAMBER_WIDTH << " by " << CHAMBER_HEIGHT << "\n";
 		cout<<"The escape window is of length " << 2*HALF_ESCAPE_WALL_WIDTH << "\n\n";
-	}
-	Particle* particleList = new Particle[num_part];
-	/* Made the center of the chamber to be a (0,0) and then allowed for particles to exist in any part of the rationals*/
-	// Main core sets location of all initial particles
-	for( int i=0 ; i<num_part ; i++){
-		particleList[i].setnewX(inChamber(CHAMBER_WIDTH));
-		particleList[i].setnewY(inChamber(CHAMBER_HEIGHT));
+
+		// Made the center of the chamber (0,0), particles can be any rational
+		for( int i=0 ; i<num_part ; i++){
+			particleList[i].setnewX(inChamber(CHAMBER_WIDTH));
+			particleList[i].setnewY(inChamber(CHAMBER_HEIGHT));
+		}
 	}
 
+	double temp_locs[2];
+	int recv_core;
+	vector<Particle> core_part_list;
+	// Assigning particles to each core. Each chamber has width CHAMBER_WIDTH/num_cores
+	// Particles cannot be sent/received, so their x & y locs are sent/received
+	for(int i=0; i<num_part; i++) {
+		if(my_rank == 0) {
+			int pos_0_to_max = particleList[i].getnewY() + CHAMBER_WIDTH/2;
+			recv_core = pos_0_to_max * (num_cores/CHAMBER_WIDTH);
+			cout << "Y Pos:" << pos_0_to_max << " Core:" << recv_core << endl;
+			temp_locs[0] = particleList[i].getnewX();
+			temp_locs[1] = particleList[i].getnewY();
+			MPI::COMM_WORLD.Send(&temp_locs, 2, MPI::DOUBLE, recv_core, 10);
+		}
+		MPI::COMM_WORLD.Bcast(&recv_core, 1, MPI::INT, 0); //Tells which core will receive
+		MPI::COMM_WORLD.Barrier();
+		// Appropriate core receive the x and y locs and reconstructs particle
+		if(my_rank==recv_core) {
+			MPI::COMM_WORLD.Recv(&temp_locs, 2, MPI::DOUBLE, 0, 10);
+			Particle* p = new Particle(temp_locs[0], temp_locs[1]);
+			core_part_list.push_back(*p);
+		}
+		MPI::COMM_WORLD.Barrier();
+	}
+
+	// TESTING SEND/RECEIVE -- REMOVE IF NEEDED
+	if(core_part_list.size() > 0) {
+		cout << "My rank is " << my_rank << " and my vector is size " << 
+			core_part_list.size() << " and my 1st Y entry is " << 
+			core_part_list.front().getnewY() << endl;
+	}
+
+
+
+/*
 	// Output 
 	// Outputs the iteration when the first one escapes and its location to ensure that it did escape
 	int iter=0;
@@ -57,7 +93,6 @@ int main ()
 			//cout<<"Particle "<<i<<"'s position is "<<particleList[i]<<".\n";
 			particleList[i].moveParticle(moveDist(), moveDist());
 			
-			// TODO: Partcile collisions
 			//collision(particleList,num_part);
 
 			// Check if the particle has escaped
@@ -70,6 +105,7 @@ int main ()
 			}
 		}
 	} while(!escape);
+*/
 
 	MPI::COMM_WORLD.Barrier();
 	if(my_rank == 0) {
