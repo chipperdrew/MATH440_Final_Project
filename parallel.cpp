@@ -17,21 +17,21 @@ double inChamber(double);
 double moveDist();
 void collision(Particle*,int);
 
+const int num_part = 10;
+
 int main ()
 {
-	// Initialize MPI and vars
+	// Initialization of MPI, variables, time, seeding
 	MPI::Init();
 	int my_rank, num_cores;
 	double startTime, endTime;
+	my_rank = MPI::COMM_WORLD.Get_rank();
+	num_cores = MPI::COMM_WORLD.Get_size();
 	if(my_rank == 0) {
 		startTime = clock();
 	}
-	my_rank = MPI::COMM_WORLD.Get_rank();
-	num_cores = MPI::COMM_WORLD.Get_size();
-	
 	srand(time(NULL));
-	int num_part(10);
-	Particle* particleList = new Particle[num_part];	
+	Particle* particleList = new Particle[num_part]; //Only used by master
 
 	// Main core outputs basic info & initializes particle locations
 	if(my_rank == 0) {
@@ -41,7 +41,7 @@ int main ()
 		cout<<"The total area is " << CHAMBER_WIDTH << " by " << CHAMBER_HEIGHT << "\n";
 		cout<<"The escape window is of length " << 2*HALF_ESCAPE_WALL_WIDTH << "\n\n";
 
-		// Made the center of the chamber (0,0), particles can be any rational
+		// Center of the chamber is (0,0), particles can be any rational number
 		for( int i=0 ; i<num_part ; i++){
 			particleList[i].setnewX(inChamber(CHAMBER_WIDTH));
 			particleList[i].setnewY(inChamber(CHAMBER_HEIGHT));
@@ -77,36 +77,41 @@ int main ()
 	if(core_part_list.size() > 0) {
 		cout << "My rank is " << my_rank << " and my vector is size " << 
 			core_part_list.size() << " and my 1st Y entry is " << 
-			core_part_list.front().getnewY() << endl;
+			core_part_list.front() << endl;
 	}
 
 
-
-/*
-	// Output 
-	// Outputs the iteration when the first one escapes and its location to ensure that it did escape
+	// Loop runs until a particle has escaped
+	// Outputs the iteration when the 1st one escapes & its location to ensure escape
 	int iter=0;
 	bool escape = false;
 	do {
 		iter++;
-		for( int i=0 ; i<num_part ; i++ ){
+		for( int i=0 ; i< core_part_list.size() ; i++ ){
 			//cout<<"Particle "<<i<<"'s position is "<<particleList[i]<<".\n";
-			particleList[i].moveParticle(moveDist(), moveDist());
+			core_part_list.at(i).moveParticle(moveDist(), moveDist());
 			
 			//collision(particleList,num_part);
 
 			// Check if the particle has escaped
-//			if(abs(particleList[i].getnewX())<escapeWidth/2.0 && abs(particleList[i].getnewY())<escapeHeight/2.0){
-			if(abs(particleList[i].getnewX()) > CHAMBER_WIDTH/2) {
+			// TODO: For now, assume escape only possible thru last core
+			if(abs(core_part_list.at(i).getnewX()) > CHAMBER_WIDTH/2 && 
+			   my_rank==num_cores-1) {
 				escape = true; // Break loop
 				cout<<"Iter #" << "\t" << "X loc" << "\t" << "Y loc" << endl;
-				cout<<iter<<"\t"<<particleList[i].getnewX()<<"\t"<<particleList[i].getnewY()<<endl;
+				cout << iter << "\t"<< core_part_list.at(i).getnewX() << 
+						"\t"<< core_part_list.at(i).getnewY() << endl;
 				break;
 			}
 		}
-	} while(!escape);
-*/
+		MPI::COMM_WORLD.Bcast(&escape, 1, MPI::BOOL, num_cores-1);
+		MPI::COMM_WORLD.Barrier();
 
+		// TODO: Check for particles crossing over core boundaries
+	} while(!escape);
+
+
+	// Finalization and printing of CPU time
 	MPI::COMM_WORLD.Barrier();
 	if(my_rank == 0) {
 		endTime = clock();
