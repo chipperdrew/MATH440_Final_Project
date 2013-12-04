@@ -1,6 +1,9 @@
 // Parallel Final Project
 // Authors: Andrew Cook, Lucas Quintero
 // Due date: 12/09/13
+// Note: If using more than 128 cores, adjust the move_dist value from '5' to any
+// number less than CHAMBER_WIDTH/num_cores.
+
 
 #include <iostream>
 #include "time.h"
@@ -110,17 +113,17 @@ int main ()
 			// Check for particles moving outside of core boundaries	
 			// IF: Particle moves past left core boundary	
 			if(tempX < CHAMBER_WIDTH*(double(my_rank)/num_cores - 0.5)) {
-				recv_core = (tempX + CHAMBER_WIDTH/2) * (num_cores/CHAMBER_WIDTH);
-				send_map[recv_core].push_back(tempX);
-				send_map[recv_core].push_back(tempY);
+				//recv_core = (tempX + CHAMBER_WIDTH/2) * (num_cores/CHAMBER_WIDTH);
+				send_map[my_rank-1].push_back(tempX);
+				send_map[my_rank-1].push_back(tempY);
 				indices_to_delete.push_back(i);
 				//cout << "LEFT ESCAPE: Core " << my_rank << " has part with new loc: " << 
 				//core_part_list.at(i) << " & should go to core " << recv_core << endl;
 			// ELSE IF: Particle moves past right core boundary:
 			} else if(tempX > CHAMBER_WIDTH*(double(my_rank+1)/num_cores - 0.5)) {
-				recv_core = (tempX + CHAMBER_WIDTH/2) * (num_cores/CHAMBER_WIDTH);
-				send_map[recv_core].push_back(tempX);
-				send_map[recv_core].push_back(tempY);
+				//recv_core = (tempX + CHAMBER_WIDTH/2) * (num_cores/CHAMBER_WIDTH);
+				send_map[my_rank+1].push_back(tempX);
+				send_map[my_rank+1].push_back(tempY);
 				indices_to_delete.push_back(i);
 				//cout << "RIGHT ESCAPE: Core " << my_rank << " has part with new loc: " << 
 				//core_part_list.at(i) << " & should go to core " << recv_core << endl;
@@ -132,6 +135,7 @@ int main ()
 		MPI::COMM_WORLD.Bcast(&escape, 1, MPI::BOOL, num_cores-1);
 		MPI::COMM_WORLD.Barrier();
 
+		
 		for(map_iter = send_map.begin(); map_iter != send_map.end(); ++map_iter) {
 			recv_core = (*map_iter).first;
 			cout << "Recv core: " << (*map_iter).first << " Size: " << (*map_iter).second.size() << endl;
@@ -163,7 +167,7 @@ double inChamber(double val){
 
 // Returns a random number between -1 and 1 for particle movement
 double moveDist(){
-	return pow(-1.0,rand() % 2) * (5.0*rand()/RAND_MAX);
+	return pow(-1.0,rand() % 2) * (5*rand()/RAND_MAX);
 }
 
 void collision(Particle *particleList, int numlist){
