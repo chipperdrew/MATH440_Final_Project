@@ -93,7 +93,6 @@ int main ()
 		map<int, vector<int> >::const_iterator map_iter;
 		vector<int> indices_to_delete;
 		iter++;
-
 		for( int i=0 ; i< core_part_list.size() ; i++ ){
 			//cout<<"Particle "<<i<<"'s position is "<<particleList[i]<<".\n";
 			core_part_list.at(i).moveParticle(moveDist(), moveDist());
@@ -113,17 +112,17 @@ int main ()
 			// Check for particles moving outside of core boundaries	
 			// IF: Particle moves past left core boundary	
 			if(tempX < CHAMBER_WIDTH*(double(my_rank)/num_cores - 0.5)) {
-				//recv_core = (tempX + CHAMBER_WIDTH/2) * (num_cores/CHAMBER_WIDTH);
-				send_map[my_rank-1].push_back(tempX);
-				send_map[my_rank-1].push_back(tempY);
+				recv_core = (tempX + CHAMBER_WIDTH/2) * (num_cores/CHAMBER_WIDTH);
+				send_map[recv_core].push_back(tempX);
+				send_map[recv_core].push_back(tempY);
 				indices_to_delete.push_back(i);
 				//cout << "LEFT ESCAPE: Core " << my_rank << " has part with new loc: " << 
 				//core_part_list.at(i) << " & should go to core " << recv_core << endl;
 			// ELSE IF: Particle moves past right core boundary:
 			} else if(tempX > CHAMBER_WIDTH*(double(my_rank+1)/num_cores - 0.5)) {
-				//recv_core = (tempX + CHAMBER_WIDTH/2) * (num_cores/CHAMBER_WIDTH);
-				send_map[my_rank+1].push_back(tempX);
-				send_map[my_rank+1].push_back(tempY);
+				recv_core = (tempX + CHAMBER_WIDTH/2) * (num_cores/CHAMBER_WIDTH);
+				send_map[recv_core].push_back(tempX);
+				send_map[recv_core].push_back(tempY);
 				indices_to_delete.push_back(i);
 				//cout << "RIGHT ESCAPE: Core " << my_rank << " has part with new loc: " << 
 				//core_part_list.at(i) << " & should go to core " << recv_core << endl;
@@ -138,7 +137,7 @@ int main ()
 		
 		for(map_iter = send_map.begin(); map_iter != send_map.end(); ++map_iter) {
 			recv_core = (*map_iter).first;
-			cout << "Recv core: " << (*map_iter).first << " Size: " << (*map_iter).second.size() << endl;
+			//cout << "Recv core: " << (*map_iter).first << " Size: " << (*map_iter).second.size() << endl;
 			//MPI::COMM_WORLD.Send((*map_iter).second, (*map_iter).second.size(), MPI_INT, recv_core, 10);
 			//MPI::COMM_WORLD.Sendrecv((*map_iter).second, (*map_iter).second.size(), MPI_INT, recv_core, 10,
 			//			x, (*map_iter).second.size(), MPI_INT, my_rank, 10);
@@ -167,7 +166,7 @@ double inChamber(double val){
 
 // Returns a random number between -1 and 1 for particle movement
 double moveDist(){
-	return pow(-1.0,rand() % 2) * (5*rand()/RAND_MAX);
+	return pow(-1.0,rand() % 2) * (5.0*rand()/RAND_MAX);
 }
 
 void collision(Particle *particleList, int numlist){
