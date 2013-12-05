@@ -3,7 +3,7 @@
 // Due date: 12/09/13
 // Note: If using more than 128 cores, adjust the move_dist value from '5' to any
 // number less than CHAMBER_WIDTH/num_cores.
-
+// TODO: Particle locs should be doubles, not integers
 
 #include <iostream>
 #include "time.h"
@@ -21,7 +21,7 @@ double moveDist();
 void collision(Particle*,int);
 
 const int num_part = 10;
-
+const double MAX_MOVE_DIST = 5;
 int main ()
 {
 	// Initialization of MPI, variables, time, seeding
@@ -35,6 +35,16 @@ int main ()
 	}
 	srand(time(NULL));
 	Particle* particleList = new Particle[num_part]; //Only used by master
+
+	// Check to make sure particles can't move across multiple cores
+	if(my_rank==0 && CHAMBER_WIDTH/num_cores < MAX_MOVE_DIST) {
+		cout << "\n\n\nERROR MESSAGE: With the variables as is, this code will not work properly.\n" <<
+			"The problem can be avoided by doing any of the following:\n" <<
+			"\t 1) Increasing the chamber width (CHAMBER_WIDTH)\n" <<
+			"\t 2) Decreasing the number of cores (num_cores)\n" <<
+			"\t 3) Decreasing the maximum particle movement distance (MAX_MOVE_DIST)\n\n\n";
+		MPI::COMM_WORLD.Abort(-1);
+	}
 
 	// Main core outputs basic info & initializes particle locations
 	if(my_rank == 0) {
@@ -93,6 +103,7 @@ int main ()
 		map<int, vector<int> >::const_iterator map_iter;
 		vector<int> indices_to_delete;
 		iter++;
+
 		for( int i=0 ; i< core_part_list.size() ; i++ ){
 			//cout<<"Particle "<<i<<"'s position is "<<particleList[i]<<".\n";
 			core_part_list.at(i).moveParticle(moveDist(), moveDist());
@@ -134,15 +145,65 @@ int main ()
 		MPI::COMM_WORLD.Bcast(&escape, 1, MPI::BOOL, num_cores-1);
 		MPI::COMM_WORLD.Barrier();
 
-		
-		for(map_iter = send_map.begin(); map_iter != send_map.end(); ++map_iter) {
-			recv_core = (*map_iter).first;
-			//cout << "Recv core: " << (*map_iter).first << " Size: " << (*map_iter).second.size() << endl;
-			//MPI::COMM_WORLD.Send((*map_iter).second, (*map_iter).second.size(), MPI_INT, recv_core, 10);
-			//MPI::COMM_WORLD.Sendrecv((*map_iter).second, (*map_iter).second.size(), MPI_INT, recv_core, 10,
-			//			x, (*map_iter).second.size(), MPI_INT, my_rank, 10);
-			
+/******** MOVING PARTICLES BETWEEN CORES VIA MPI *******/
+		// 1st -- Check all of the particles that need to move LEFT a core
+		// NEED to send the size so MPI Receive knows what to expect
+		// If size is nonzero, send the vector of particle locations also
+		int send_size, recv_size;
+		// Sending
+		if(my_rank!=0) {
+			send_size = send_map[my_rank-1].size();
+			MPI::COMM_WORLD.Send(&send_size, 1, MPI_INT, my_rank-1, 10);
+			if(send_size > 0) {
+				MPI::COMM_WORLD.Send(&send_map[my_rank-1].front(), send_size, MPI_INT, my_rank-1, 10);
+			}
 		}
+		// Receiving and reconstruction
+		if(my_rank!=num_cores-1) {
+			MPI::COMM_WORLD.Recv(&recv_size, 1, MPI_INT, my_rank+1, 10);
+			if(recv_size > 0) {
+				int recv_array[recv_size];
+				MPI::COMM_WORLD.Recv(&recv_array, recv_size, MPI_INT, my_rank+1, 10);
+				//cout << "My rank is " << my_rank << " and I received particle with x loc " << recv_array[0] << endl;
+				// Reconstruct particles & add on to back of particle vector
+				for(int i=0; i<recv_size; i+=2) {
+					Particle* p = new Particle(recv_array[i], recv_array[i+1]);
+					core_part_list.push_back(*p);
+				}
+			}
+		}
+		MPI::COMM_WORLD.Barrier();
+
+		// 2nd -- Check all particles that need to move RIGHT a core
+		// Sending
+		if(my_rank!=num_cores-1) {
+			send_size = send_map[my_rank+1].size();
+			MPI::COMM_WORLD.Send(&send_size, 1, MPI_INT, my_rank+1, 10);
+			if(send_size > 0) {
+				MPI::COMM_WORLD.Send(&send_map[my_rank+1].front(), send_size, MPI_INT, my_rank+1, 10);
+			}
+		}
+		// Receiving and reconstruction
+		if(my_rank!=0) {
+			MPI::COMM_WORLD.Recv(&recv_size, 1, MPI_INT, my_rank-1, 10);
+			if(recv_size > 0) {
+				int recv_array[recv_size];
+				MPI::COMM_WORLD.Recv(&recv_array, recv_size, MPI_INT, my_rank-1, 10);
+				//cout << "My rank is " << my_rank << " and I received particle with x loc " << recv_array[0] << endl;
+				// Reconstruct particles & add on to back of particle vector
+				for(int i=0; i<recv_size; i+=2) {
+					Particle* p = new Particle(recv_array[i], recv_array[i+1]);
+					core_part_list.push_back(*p);
+				}
+			}
+		}
+		MPI::COMM_WORLD.Barrier();
+
+		// 3rd -- Delete particles from loc vector that are no longer in core region
+		for(int i=0; i<indices_to_delete.size(); i++) {
+			core_part_list.erase(core_part_list.begin()+indices_to_delete.at(i));	
+		}
+/******** END MOVING PARTICLES BETWEEN CORES VIA MPI *******/
 	} while(!escape);
 
 
@@ -166,7 +227,7 @@ double inChamber(double val){
 
 // Returns a random number between -1 and 1 for particle movement
 double moveDist(){
-	return pow(-1.0,rand() % 2) * (5.0*rand()/RAND_MAX);
+	return pow(-1.0,rand() % 2) * (MAX_MOVE_DIST*rand()/RAND_MAX);
 }
 
 void collision(Particle *particleList, int numlist){
