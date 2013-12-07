@@ -8,6 +8,8 @@
 #include "time.h"
 #include <cmath>
 #include "Particle.h"
+#include "Particle.cpp"
+#include <fstream>
 
 using namespace std;
 
@@ -30,8 +32,10 @@ int main ()
 	
 	// Initializing particles
 	int num_part(1000);
+	int num_part(1);
 	//cout<<"\n\nNumber of Particles:\t" << endl;
 	//cin>>num_part;
+				// Break loop
 	cout<<"\n\nThere are " << num_part << " particles in this simulation.\n";
 	cout<<"The total area is " << CHAMBER_WIDTH << " by " << CHAMBER_HEIGHT << "\n";
 	cout<<"The escape window is of length " << 2*HALF_ESCAPE_WALL_WIDTH << "\n\n";
@@ -58,8 +62,9 @@ int main ()
 
 			// Check if the particle has escaped
 //			if(abs(particleList[i].getnewX())<escapeWidth/2.0 && abs(particleList[i].getnewY())<escapeHeight/2.0){
-			if(abs(particleList[i].getnewX()) > CHAMBER_WIDTH/2) {
-				escape = true; // Break loop
+			if(particleList[i].getnewX() > CHAMBER_WIDTH/2) {
+				// Break loop
+				escape=true;
 				cout<<"Iter #" << "\t" << "X loc" << "\t" << "Y loc" << endl;
 				cout<<iter<<"\t"<<particleList[i].getnewX()<<"\t"<<particleList[i].getnewY()<<endl;
 				break;
@@ -109,7 +114,7 @@ void collision(Particle *particleList, int numlist){
 
 			A=pow(yterm,2)+pow(xterm,2);
 			B=2*(yterm*yconst+xterm*xconst);
-			C=pow(yconst,2)+pow(xconst,2)-pow(0,2);
+			C=pow(yconst,2)+pow(xconst,2)-pow(1,2);
 			if((pow(B,2)-4*A*C)<0)
 				break;
 			plust=(-B+sqrt(pow(B,2)-4*A*C))/(2*A);
@@ -130,11 +135,11 @@ void collision(Particle *particleList, int numlist){
 			} else{
 				break;
 			}
-
+				cout<<"BINGO!!!\n";
 			if(t<tmin){
 				tmin=t;
-			}
-		}//cout<<particleList[0]<<endl;
+			
+}		}//cout<<particleList[0]<<endl;
 		if(i!=numlist-1 && tmin<=1 && tmin>0){
 			//cout<<tmin<<endl;
 			particleList[i].setnewX(.95*tmin*(particleList[i].getnewX()-particleList[i].getoldX())+particleList[i].getoldX());
