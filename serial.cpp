@@ -8,7 +8,6 @@
 #include "time.h"
 #include <cmath>
 #include "Particle.h"
-#include <fstream>
 
 using namespace std;
 
@@ -28,11 +27,9 @@ int main ()
 
 	// TODO: Remove this when comparing serial vs. parallel CPU times
 	// Initializing file
-	ofstream output_file;
-	output_file.open("particle_locs.txt");
 	
 	// Initializing particles
-	int num_part(10);
+	int num_part(1000);
 	//cout<<"\n\nNumber of Particles:\t" << endl;
 	//cin>>num_part;
 	cout<<"\n\nThere are " << num_part << " particles in this simulation.\n";
@@ -55,13 +52,9 @@ int main ()
 		for( int i=0 ; i<num_part ; i++ ){
 			//cout<<"Particle "<<i<<"'s position is "<<particleList[i]<<".\n";
 			particleList[i].moveParticle(moveDist(), moveDist());
-			if(i<101) {
-				output_file << particleList[i].getnewX() << " " << 
-				particleList[i].getnewY() << " ";
-			}
 
 			// TODO: Partcile collisions
-			//collision(particleList,num_part);
+			collision(particleList,num_part);
 
 			// Check if the particle has escaped
 //			if(abs(particleList[i].getnewX())<escapeWidth/2.0 && abs(particleList[i].getnewY())<escapeHeight/2.0){
@@ -72,10 +65,8 @@ int main ()
 				break;
 			}
 		}
-		output_file << "\n";
 	} while(!escape);
 
-	output_file.close();
 	endTime = clock();
 	cout << "Total CPU time was: " << (endTime-startTime)/CLOCKS_PER_SEC << " seconds.\n";
 	return 0; //end main
@@ -103,7 +94,6 @@ void collision(Particle *particleList, int numlist){
 
 	for(int i=0 ; i<numlist ; i++){
 		tmin=10000000.000;
-//		//cout<<"ENTERED 1\n";
 		// m=(y2-y1)/(x2-x1)
 		//m2=(particleList[i].getnewY()-particleList[i].getoldY())/(particleList[i].getnewX()-particleList[i].getoldX());
 		for(int j=i+1 ; j<numlist ; j++){		
