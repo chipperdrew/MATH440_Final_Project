@@ -1,6 +1,9 @@
 // Parallel Final Project
 // Authors: Andrew Cook, Lucas Quintero
 // Due date: 12/09/13
+// Note: If using more than 128 cores, adjust the move_dist value from '5' to any
+// number less than CHAMBER_WIDTH/num_cores.
+// TODO: Particle locs should be doubles, not integers
 
 #include <iostream>
 #include "time.h"
@@ -18,7 +21,7 @@ double moveDist();
 void collision(Particle*,int);
 
 const int num_part = 10;
-
+const double MAX_MOVE_DIST = 5;
 int main ()
 {
 	// Initialization of MPI, variables, time, seeding
@@ -32,6 +35,16 @@ int main ()
 	}
 	srand(time(NULL));
 	Particle* particleList = new Particle[num_part]; //Only used by master
+
+	// Check to make sure particles can't move across multiple cores
+	if(my_rank==0 && CHAMBER_WIDTH/num_cores < MAX_MOVE_DIST) {
+		cout << "\n\n\nERROR MESSAGE: With the variables as is, this code will not work properly.\n" <<
+			"The problem can be avoided by doing any of the following:\n" <<
+			"\t 1) Increasing the chamber width (CHAMBER_WIDTH)\n" <<
+			"\t 2) Decreasing the number of cores (num_cores)\n" <<
+			"\t 3) Decreasing the maximum particle movement distance (MAX_MOVE_DIST)\n\n\n";
+		MPI::COMM_WORLD.Abort(-1);
+	}
 
 	// Main core outputs basic info & initializes particle locations
 	if(my_rank == 0) {
@@ -55,9 +68,9 @@ int main ()
 	// Particles cannot be sent/received, so their x & y locs are sent/received
 	for(int i=0; i<num_part; i++) {
 		if(my_rank == 0) {
-			int pos_0_to_max = particleList[i].getnewX() + CHAMBER_WIDTH/2;
+			double pos_0_to_max = particleList[i].getnewX() + CHAMBER_WIDTH/2;
 			recv_core = pos_0_to_max * (num_cores/CHAMBER_WIDTH);
-			cout << "X Pos:" << pos_0_to_max << " Core:" << recv_core << endl;
+			//cout << "X Pos:" << pos_0_to_max << " Core:" << recv_core << endl;
 			temp_locs[0] = particleList[i].getnewX();
 			temp_locs[1] = particleList[i].getnewY();
 			MPI::COMM_WORLD.Send(&temp_locs, 2, MPI::DOUBLE, recv_core, 10);
@@ -84,45 +97,103 @@ int main ()
 	// Outputs the iteration when the 1st one escapes & its location to ensure escape
 	int iter=0;
 	bool escape = false;
-	vector<int> indices_to_send;
 	do {
+		// Map contains cores as keys and vector of indices corresponding to key
+		map<int, vector<double> > send_map;
+		map<int, vector<double> >::const_iterator map_iter;
+		vector<int> indices_to_delete;
 		iter++;
 		for( int i=0 ; i< core_part_list.size() ; i++ ){
-			//cout<<"Particle "<<i<<"'s position is "<<particleList[i]<<".\n";
+			//cout<<"My rank: " << my_rank << " & Particle "<<i<<"'s position is "<<core_part_list.at(i)<<".\n";
 			core_part_list.at(i).moveParticle(moveDist(), moveDist());
-			int tempX = core_part_list.at(i).getnewX();
-			
+			double tempX = core_part_list.at(i).getnewX();
+			double tempY = core_part_list.at(i).getnewY();	
 			//collision(particleList,num_part);
 
 			// Check if the particle has escaped
-			// TODO: For now, assume escape only possible thru last core
-			if(abs(tempX) > CHAMBER_WIDTH/2 && 
-			   my_rank==num_cores-1) {
+			if(abs(tempX) > CHAMBER_WIDTH/2 && my_rank==num_cores-1) {
 				escape = true; // Break loop
-				cout<<"Iter #" << "\t" << "X loc" << "\t" << "Y loc" << endl;
-				cout << iter << "\t"<< core_part_list.at(i).getnewX() << 
-						"\t"<< core_part_list.at(i).getnewY() << endl;
+				cout << "\nA particle has escaped!!! Escape info on particle: " << endl;
+				cout << "Iter #" << "\t" << "X loc" << "\t" << "Y loc" << endl;
+				cout << iter << "\t"<< tempX << "\t"<< tempY << endl;
 				break;
 			}
 
-			// Check for particles moving outside of core boundaries	
-			// IF: Particle moves past left core boundary	
-			if(tempX < CHAMBER_WIDTH*(double(my_rank)/num_cores - 0.5)) {
+			// Check for particles moving outside of left OR right core boundaries	
+			if(tempX < CHAMBER_WIDTH*(double(my_rank)/num_cores - 0.5) || 
+			   tempX > CHAMBER_WIDTH*(double(my_rank+1)/num_cores - 0.5)) {
 				recv_core = (tempX + CHAMBER_WIDTH/2) * (num_cores/CHAMBER_WIDTH);
-				//cout << "LEFT ESCAPE: Core " << my_rank << " has part with new loc: " << 
+				send_map[recv_core].push_back(tempX);
+				send_map[recv_core].push_back(tempY);
+				indices_to_delete.push_back(i);
+				//cout << "ESCAPE: Core " << my_rank << " has part with new loc: " << 
 				//core_part_list.at(i) << " & should go to core " << recv_core << endl;
-			// ELSE IF: Particle moves past right core boundary:
-			} else if(tempX > CHAMBER_WIDTH*(double(my_rank+1)/num_cores - 0.5)) {
-				recv_core = (tempX + CHAMBER_WIDTH/2) * (num_cores/CHAMBER_WIDTH);
-				//cout << "RIGHT ESCAPE: Core " << my_rank << " has part with new loc: " << 
-				//core_part_list.at(i) << " & should go to core " << recv_core << endl;
-			// ELSE: Particle still in core's domain
-			} else {
-				continue;
 			}
 		}
+
+		// Bcast escape so cores know when to terminate loop
 		MPI::COMM_WORLD.Bcast(&escape, 1, MPI::BOOL, num_cores-1);
 		MPI::COMM_WORLD.Barrier();
+
+/******** MOVING PARTICLES BETWEEN CORES VIA MPI *******/
+		// 1st -- Check all of the particles that need to move LEFT a core
+		// NEED to send the size so MPI Receive knows what to expect
+		// If size is nonzero, send the vector of particle locations also
+		int send_size, recv_size;
+		// Sending
+		if(my_rank!=0) {
+			send_size = send_map[my_rank-1].size();
+			MPI::COMM_WORLD.Send(&send_size, 1, MPI_INT, my_rank-1, 10);
+			if(send_size > 0) {
+				MPI::COMM_WORLD.Send(&send_map[my_rank-1].front(), send_size, MPI_DOUBLE, my_rank-1, 10);
+			}
+		}
+		// Receiving and reconstruction
+		if(my_rank!=num_cores-1) {
+			MPI::COMM_WORLD.Recv(&recv_size, 1, MPI_INT, my_rank+1, 10);
+			if(recv_size > 0) {
+				double recv_array[recv_size];
+				MPI::COMM_WORLD.Recv(&recv_array, recv_size, MPI_DOUBLE, my_rank+1, 10);
+				//cout << "My rank is " << my_rank << " and I received particle with x loc " << recv_array[0] << endl;
+				// Reconstruct particles & add on to back of particle vector
+				for(int i=0; i<recv_size; i+=2) {
+					Particle* p = new Particle(recv_array[i], recv_array[i+1]);
+					core_part_list.push_back(*p);
+				}
+			}
+		}
+		MPI::COMM_WORLD.Barrier();
+
+		// 2nd -- Check all particles that need to move RIGHT a core
+		// Sending
+		if(my_rank!=num_cores-1) {
+			send_size = send_map[my_rank+1].size();
+			MPI::COMM_WORLD.Send(&send_size, 1, MPI_INT, my_rank+1, 10);
+			if(send_size > 0) {
+				MPI::COMM_WORLD.Send(&send_map[my_rank+1].front(), send_size, MPI_DOUBLE, my_rank+1, 10);
+			}
+		}
+		// Receiving and reconstruction
+		if(my_rank!=0) {
+			MPI::COMM_WORLD.Recv(&recv_size, 1, MPI_INT, my_rank-1, 10);
+			if(recv_size > 0) {
+				double recv_array[recv_size];
+				MPI::COMM_WORLD.Recv(&recv_array, recv_size, MPI_DOUBLE, my_rank-1, 10);
+				//cout << "My rank is " << my_rank << " and I received particle with x loc " << recv_array[0] << endl;
+				// Reconstruct particles & add on to back of particle vector
+				for(int i=0; i<recv_size; i+=2) {
+					Particle* p = new Particle(recv_array[i], recv_array[i+1]);
+					core_part_list.push_back(*p);
+				}
+			}
+		}
+		MPI::COMM_WORLD.Barrier();
+
+		// 3rd -- Delete particles from loc vector that are no longer in core region
+		for(int i=0; i<indices_to_delete.size(); i++) {
+			core_part_list.erase(core_part_list.begin()+indices_to_delete.at(i));	
+		}
+/******** END MOVING PARTICLES BETWEEN CORES VIA MPI *******/
 	} while(!escape);
 
 
@@ -146,7 +217,8 @@ double inChamber(double val){
 
 // Returns a random number between -1 and 1 for particle movement
 double moveDist(){
-	return pow(-1.0,rand() % 2) * (5.0*rand()/RAND_MAX);
+	double test = pow(-1.0,rand() % 2) * (MAX_MOVE_DIST*rand()/RAND_MAX);
+	return test;
 }
 
 void collision(Particle *particleList, int numlist){
