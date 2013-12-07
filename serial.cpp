@@ -7,7 +7,7 @@
 #include <iostream>
 #include "time.h"
 #include <cmath>
-#include "Particle.h"
+#include "Particle.cpp"
 #include <fstream>
 
 using namespace std;
@@ -28,13 +28,12 @@ int main ()
 
 	// TODO: Remove this when comparing serial vs. parallel CPU times
 	// Initializing file
-	ofstream output_file;
-	output_file.open("particle_locs.txt");
 	
 	// Initializing particles
-	int num_part(10);
+	int num_part(1);
 	//cout<<"\n\nNumber of Particles:\t" << endl;
 	//cin>>num_part;
+				// Break loop
 	cout<<"\n\nThere are " << num_part << " particles in this simulation.\n";
 	cout<<"The total area is " << CHAMBER_WIDTH << " by " << CHAMBER_HEIGHT << "\n";
 	cout<<"The escape window is of length " << 2*HALF_ESCAPE_WALL_WIDTH << "\n\n";
@@ -55,27 +54,23 @@ int main ()
 		for( int i=0 ; i<num_part ; i++ ){
 			//cout<<"Particle "<<i<<"'s position is "<<particleList[i]<<".\n";
 			particleList[i].moveParticle(moveDist(), moveDist());
-			if(i<101) {
-				output_file << particleList[i].getnewX() << " " << 
-				particleList[i].getnewY() << " ";
-			}
 
 			// TODO: Partcile collisions
-			//collision(particleList,num_part);
+			collision(particleList,num_part);
 
 			// Check if the particle has escaped
 //			if(abs(particleList[i].getnewX())<escapeWidth/2.0 && abs(particleList[i].getnewY())<escapeHeight/2.0){
-			if(abs(particleList[i].getnewX()) > CHAMBER_WIDTH/2) {
-				escape = true; // Break loop
+			if(particleList[i].getnewX() > CHAMBER_WIDTH/2) {
+				// Break loop
+				escape=true;
 				cout<<"Iter #" << "\t" << "X loc" << "\t" << "Y loc" << endl;
 				cout<<iter<<"\t"<<particleList[i].getnewX()<<"\t"<<particleList[i].getnewY()<<endl;
 				break;
 			}
 		}
-		output_file << "\n";
+
 	} while(!escape);
 
-	output_file.close();
 	endTime = clock();
 	cout << "Total CPU time was: " << (endTime-startTime)/CLOCKS_PER_SEC << " seconds.\n";
 	return 0; //end main
@@ -119,7 +114,7 @@ void collision(Particle *particleList, int numlist){
 
 			A=pow(yterm,2)+pow(xterm,2);
 			B=2*(yterm*yconst+xterm*xconst);
-			C=pow(yconst,2)+pow(xconst,2)-pow(0,2);
+			C=pow(yconst,2)+pow(xconst,2)-pow(1,2);
 			if((pow(B,2)-4*A*C)<0)
 				break;
 			plust=(-B+sqrt(pow(B,2)-4*A*C))/(2*A);
@@ -140,11 +135,11 @@ void collision(Particle *particleList, int numlist){
 			} else{
 				break;
 			}
-
+				cout<<"BINGO!!!\n";
 			if(t<tmin){
 				tmin=t;
-			}
-		}//cout<<particleList[0]<<endl;
+			
+}		}//cout<<particleList[0]<<endl;
 		if(i!=numlist-1 && tmin<=1 && tmin>0){
 			//cout<<tmin<<endl;
 			particleList[i].setnewX(.95*tmin*(particleList[i].getnewX()-particleList[i].getoldX())+particleList[i].getoldX());
