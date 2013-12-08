@@ -3,8 +3,8 @@
 #include <math.h>
 
 // Global vars
-static const double CHAMBER_HEIGHT = 8;
-static const double CHAMBER_WIDTH = 8;
+static const double CHAMBER_HEIGHT = 800;
+static const double CHAMBER_WIDTH = 800;
 // Escape if on x-positive wall AND y is within this value of the origin
 static const double HALF_ESCAPE_WALL_WIDTH = 0.5;
 //static const double escapeHeight = 0.2;

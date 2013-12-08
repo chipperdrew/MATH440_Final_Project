@@ -20,15 +20,15 @@ double inChamber(double);
 double moveDist();
 void collision(Particle*,int);
 
-const int num_part = 10000;
+const int num_part = 1000000;
 const double MAX_MOVE_DIST = 5;
 int main ()
 {
 	// Initialization of MPI, variables, time, seeding
 	MPI::Init();
-	int my_rank, num_cores;
+	int num_cores;
 	double startTime, endTime;
-	my_rank = MPI::COMM_WORLD.Get_rank();
+	const int my_rank = MPI::COMM_WORLD.Get_rank();
 	num_cores = MPI::COMM_WORLD.Get_size();
 	if(my_rank == 0) {
 		startTime = clock();
@@ -48,11 +48,10 @@ int main ()
 
 	// Main core outputs basic info & initializes particle locations
 	if(my_rank == 0) {
-		//cout<<"\n\nNumber of Particles:\t" << endl;
-		//cin>>num_part;
 		cout<<"\n\nThere are " << num_part << " particles in this simulation.\n";
-		cout<<"The total area is " << CHAMBER_WIDTH << " by " << CHAMBER_HEIGHT << "\n";
-		cout<<"The escape window is of length " << 2*HALF_ESCAPE_WALL_WIDTH << "\n\n";
+		cout<<"Num cores is " << num_cores << endl;
+		//cout<<"The total area is " << CHAMBER_WIDTH << " by " << CHAMBER_HEIGHT << "\n";
+		//cout<<"The escape window is of length " << 2*HALF_ESCAPE_WALL_WIDTH << "\n\n";
 
 		// Center of the chamber is (0,0), particles can be any rational number
 		for( int i=0 ; i<num_part ; i++){
@@ -71,7 +70,6 @@ int main ()
 			double pos_0_to_max = particleList[i].getnewX() + CHAMBER_WIDTH/2;
 			recv_core = pos_0_to_max * (num_cores/CHAMBER_WIDTH);
 //cout << recv_core << endl;
-			//cout << "X Pos:" << pos_0_to_max << " Core:" << recv_core << endl;
 			temp_locs[0] = particleList[i].getnewX();
 			temp_locs[1] = particleList[i].getnewY();
 			MPI::COMM_WORLD.Send(&temp_locs, 2, MPI::DOUBLE, recv_core, 10);
@@ -88,11 +86,11 @@ int main ()
 	}
 
 	// TESTING SEND/RECEIVE -- REMOVE IF NEEDED
-	if(core_part_list.size() > 0) {
-		cout << "My rank is " << my_rank << " and my vector is size " << 
-			core_part_list.size() << " and my 1st Y entry is " << 
-			core_part_list.front() << endl;
-	}
+	//if(core_part_list.size() > 0) {
+		//cout << "My rank is " << my_rank << " and my vector is size " << 
+		//	core_part_list.size() << " and my 1st Y entry is " << 
+		//	core_part_list.front() << endl;
+	//}
 
 	// Loop runs until a particle has escaped
 	// Outputs the iteration when the 1st one escapes & its location to ensure escape
@@ -237,7 +235,6 @@ void collision(Particle *particleList, int numlist){
 		// m=(y2-y1)/(x2-x1)
 		//m2=(particleList[i].getnewY()-particleList[i].getoldY())/(particleList[i].getnewX()-particleList[i].getoldX());
 		for(int j=i+1 ; j<numlist ; j++){		
-//			//cout<<"ENTERED 2\n";
 			if(i==j){
 				continue;
 			}

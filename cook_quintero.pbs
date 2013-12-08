@@ -1,0 +1,13 @@
+#!/bin/bash
+#PBS -N cook_quintero
+#PBS -l nodes=02:ppn=12:compute
+#PBS -l walltime=00:10:00
+#PBS -M andcook@mines.edu
+#PBS -V
+cd $PBS_O_WORKDIR
+date
+# For future check to record the names of nodes used for your job
+sort -u -t- -n --key=2 --key=3 -u $PBS_NODEFILE > proj_nodes.$PBS_JOBID
+mpiexec main_exe
+date
+
